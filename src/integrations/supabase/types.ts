@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercise_library: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_default: boolean | null
+          muscle_group: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          muscle_group: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          muscle_group?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      workout_entries: {
+        Row: {
+          created_at: string
+          custom_trackers: Json | null
+          exercise_id: string
+          id: string
+          session_id: string
+          sets: Json
+        }
+        Insert: {
+          created_at?: string
+          custom_trackers?: Json | null
+          exercise_id: string
+          id?: string
+          session_id: string
+          sets?: Json
+        }
+        Update: {
+          created_at?: string
+          custom_trackers?: Json | null
+          exercise_id?: string
+          id?: string
+          session_id?: string
+          sets?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_entries_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_entries_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_sessions: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
