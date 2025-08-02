@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { supabase } from '@/integrations/supabase/client';
 import { Auth } from '@/components/Auth';
 import { Layout } from '@/components/Layout';
 import { LogWorkout } from '@/components/LogWorkout';
@@ -7,7 +8,37 @@ import { History } from '@/components/History';
 import { Progress } from '@/components/Progress';
 
 const Index = () => {
-  const { user, isLoading, activePage } = useWorkoutStore();
+  const { user, isLoading, activePage, setUser, setSession, setLoading, fetchExercises } = useWorkoutStore();
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        // Fetch exercises when user is authenticated
+        if (session?.user) {
+          fetchExercises();
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      // Fetch exercises when user is authenticated
+      if (session?.user) {
+        fetchExercises();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setUser, setSession, setLoading, fetchExercises]);
 
   if (isLoading) {
     return (
