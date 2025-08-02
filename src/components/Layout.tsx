@@ -1,32 +1,13 @@
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Button } from '@/components/ui/button';
-import { LogOut, Dumbbell, History, TrendingUp, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { Dumbbell, History, TrendingUp, Plus } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const { activePage, setPage, user } = useWorkoutStore();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Signed out successfully",
-        description: "See you next time!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error signing out",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
+  const { activePage, setPage } = useWorkoutStore();
 
   const navItems = [
     { id: 'log', label: 'Log Workout', icon: Plus },
@@ -66,15 +47,9 @@ export const Layout = ({ children }: LayoutProps) => {
               })}
             </nav>
 
-            {/* User Menu */}
-            <div className="flex items-center space-x-3">
-              <span className="text-sm text-muted-foreground hidden sm:block">
-                {user?.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
+            {/* App Title */}
+            <div className="hidden sm:block">
+              <span className="text-sm text-muted-foreground">Personal Gym Tracker</span>
             </div>
           </div>
         </div>

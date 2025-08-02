@@ -8,12 +8,8 @@ import { Calendar, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const History = () => {
-  const { workoutSessions, fetchWorkoutHistory } = useWorkoutStore();
+  const { workoutSessions } = useWorkoutStore();
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    fetchWorkoutHistory();
-  }, [fetchWorkoutHistory]);
 
   const toggleSessionExpansion = (sessionId: string) => {
     const newExpanded = new Set(expandedSessions);

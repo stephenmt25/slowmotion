@@ -20,15 +20,11 @@ export const LogWorkout = () => {
     saveWorkout,
     clearCurrentWorkout,
     openModal,
-    fetchExercises,
     exercises
   } = useWorkoutStore();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    fetchExercises();
-  }, [fetchExercises]);
 
   const handleSaveWorkout = async () => {
     if (currentWorkout.entries.length === 0) {

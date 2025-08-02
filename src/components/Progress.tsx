@@ -11,19 +11,12 @@ const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps'
 export const Progress = () => {
   const { 
     exercises, 
-    fetchExercises, 
-    fetchWorkoutHistory, 
     progressFilter, 
     setProgressFilter, 
     calculateProgressData 
   } = useWorkoutStore();
 
   const [selectedMetric, setSelectedMetric] = useState<'volume_load' | 'max_weight' | 'estimated_1rm' | 'total_reps'>('volume_load');
-
-  useEffect(() => {
-    fetchExercises();
-    fetchWorkoutHistory();
-  }, [fetchExercises, fetchWorkoutHistory]);
 
   const progressData = calculateProgressData();
 

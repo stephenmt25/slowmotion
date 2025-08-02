@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
 
 // Types
 export interface Exercise {
@@ -27,7 +25,6 @@ export interface WorkoutEntry {
 
 export interface WorkoutSession {
   id: string;
-  user_id: string;
   date: string;
   entries?: WorkoutEntry[];
   created_at?: string;
@@ -41,14 +38,75 @@ export interface ProgressData {
   total_reps: number;
 }
 
-interface WorkoutState {
-  // Auth
-  user: User | null;
-  session: Session | null;
-  isLoading: boolean;
+// Local Storage Keys
+const STORAGE_KEYS = {
+  exercises: 'gym-tracker-exercises',
+  workoutSessions: 'gym-tracker-sessions',
+  currentWorkout: 'gym-tracker-current-workout',
+} as const;
+
+// Default Exercises
+const DEFAULT_EXERCISES: Exercise[] = [
+  // Chest
+  { id: 'bench-press', name: 'Bench Press', muscle_group: 'Chest', is_default: true },
+  { id: 'incline-bench-press', name: 'Incline Bench Press', muscle_group: 'Chest', is_default: true },
+  { id: 'dumbbell-press', name: 'Dumbbell Press', muscle_group: 'Chest', is_default: true },
+  { id: 'push-ups', name: 'Push-ups', muscle_group: 'Chest', is_default: true },
+  { id: 'dips', name: 'Dips', muscle_group: 'Chest', is_default: true },
   
+  // Back
+  { id: 'deadlift', name: 'Deadlift', muscle_group: 'Back', is_default: true },
+  { id: 'pull-ups', name: 'Pull-ups', muscle_group: 'Back', is_default: true },
+  { id: 'barbell-rows', name: 'Barbell Rows', muscle_group: 'Back', is_default: true },
+  { id: 'lat-pulldown', name: 'Lat Pulldown', muscle_group: 'Back', is_default: true },
+  { id: 'cable-rows', name: 'Cable Rows', muscle_group: 'Back', is_default: true },
+  
+  // Legs
+  { id: 'squat', name: 'Squat', muscle_group: 'Legs', is_default: true },
+  { id: 'leg-press', name: 'Leg Press', muscle_group: 'Legs', is_default: true },
+  { id: 'lunges', name: 'Lunges', muscle_group: 'Legs', is_default: true },
+  { id: 'leg-curls', name: 'Leg Curls', muscle_group: 'Legs', is_default: true },
+  { id: 'calf-raises', name: 'Calf Raises', muscle_group: 'Legs', is_default: true },
+  
+  // Shoulders
+  { id: 'overhead-press', name: 'Overhead Press', muscle_group: 'Shoulders', is_default: true },
+  { id: 'lateral-raises', name: 'Lateral Raises', muscle_group: 'Shoulders', is_default: true },
+  { id: 'front-raises', name: 'Front Raises', muscle_group: 'Shoulders', is_default: true },
+  { id: 'rear-delt-flys', name: 'Rear Delt Flys', muscle_group: 'Shoulders', is_default: true },
+  
+  // Arms
+  { id: 'bicep-curls', name: 'Bicep Curls', muscle_group: 'Arms', is_default: true },
+  { id: 'tricep-extensions', name: 'Tricep Extensions', muscle_group: 'Arms', is_default: true },
+  { id: 'hammer-curls', name: 'Hammer Curls', muscle_group: 'Arms', is_default: true },
+  { id: 'close-grip-bench', name: 'Close Grip Bench Press', muscle_group: 'Arms', is_default: true },
+];
+
+// Utility functions for local storage
+const loadFromStorage = <T>(key: string, defaultValue: T): T => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.error(`Error loading ${key} from storage:`, error);
+    return defaultValue;
+  }
+};
+
+const saveToStorage = <T>(key: string, value: T): void => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Error saving ${key} to storage:`, error);
+  }
+};
+
+const generateId = (): string => {
+  return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
+interface WorkoutState {
   // Navigation
-  activePage: 'log' | 'history' | 'progress' | 'auth';
+  activePage: 'log' | 'history' | 'progress';
   
   // Data
   exercises: Exercise[];
@@ -69,24 +127,21 @@ interface WorkoutState {
   
   // Actions
   setPage: (page: WorkoutState['activePage']) => void;
-  setUser: (user: User | null) => void;
-  setSession: (session: Session | null) => void;
-  setLoading: (loading: boolean) => void;
   
   // Exercise actions
-  fetchExercises: () => Promise<void>;
-  addCustomExercise: (name: string, muscleGroup: string) => Promise<Exercise | null>;
+  loadExercises: () => void;
+  addCustomExercise: (name: string, muscleGroup: string) => Exercise | null;
   
   // Workout actions
   setCurrentWorkoutDate: (date: string) => void;
   addExerciseToWorkout: (exerciseId: string) => void;
   updateWorkoutEntry: (index: number, entry: Partial<WorkoutEntry>) => void;
   removeExerciseFromWorkout: (index: number) => void;
-  saveWorkout: () => Promise<boolean>;
+  saveWorkout: () => boolean;
   clearCurrentWorkout: () => void;
   
   // History actions
-  fetchWorkoutHistory: () => Promise<void>;
+  loadWorkoutHistory: () => void;
   
   // Progress actions
   setProgressFilter: (filter: WorkoutState['progressFilter']) => void;
@@ -99,9 +154,6 @@ interface WorkoutState {
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   // Initial state
-  user: null,
-  session: null,
-  isLoading: true,
   activePage: 'log',
   exercises: [],
   workoutSessions: [],
@@ -116,58 +168,41 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
 
   // Navigation
   setPage: (page) => set({ activePage: page }),
-  
-  // Auth
-  setUser: (user) => set({ user }),
-  setSession: (session) => set({ session }),
-  setLoading: (loading) => set({ isLoading: loading }),
 
   // Exercises
-  fetchExercises: async () => {
-    try {
-      const { data, error } = await supabase
-        .from('exercise_library')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      set({ exercises: data || [] });
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
+  loadExercises: () => {
+    const savedExercises = loadFromStorage(STORAGE_KEYS.exercises, []);
+    
+    // If no exercises saved, initialize with defaults
+    if (savedExercises.length === 0) {
+      saveToStorage(STORAGE_KEYS.exercises, DEFAULT_EXERCISES);
+      set({ exercises: DEFAULT_EXERCISES });
+    } else {
+      set({ exercises: savedExercises });
     }
   },
 
-  addCustomExercise: async (name, muscleGroup) => {
-    const { user } = get();
-    if (!user) return null;
+  addCustomExercise: (name, muscleGroup) => {
+    const { exercises } = get();
+    const newExercise: Exercise = {
+      id: generateId(),
+      name,
+      muscle_group: muscleGroup,
+      is_default: false
+    };
 
-    try {
-      const { data, error } = await supabase
-        .from('exercise_library')
-        .insert({
-          name,
-          muscle_group: muscleGroup,
-          created_by: user.id,
-          is_default: false
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      const { exercises } = get();
-      set({ exercises: [...exercises, data] });
-      return data;
-    } catch (error) {
-      console.error('Error adding custom exercise:', error);
-      return null;
-    }
+    const updatedExercises = [...exercises, newExercise];
+    saveToStorage(STORAGE_KEYS.exercises, updatedExercises);
+    set({ exercises: updatedExercises });
+    return newExercise;
   },
 
   // Current workout
   setCurrentWorkoutDate: (date) => {
     const { currentWorkout } = get();
-    set({ currentWorkout: { ...currentWorkout, date } });
+    const updatedWorkout = { ...currentWorkout, date };
+    set({ currentWorkout: updatedWorkout });
+    saveToStorage(STORAGE_KEYS.currentWorkout, updatedWorkout);
   },
 
   addExerciseToWorkout: (exerciseId) => {
@@ -176,18 +211,20 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     if (!exercise) return;
 
     const newEntry: WorkoutEntry = {
+      id: generateId(),
       exercise_id: exerciseId,
       exercise,
       sets: [{ weight: 0, reps: 0 }],
       custom_trackers: {}
     };
 
-    set({
-      currentWorkout: {
-        ...currentWorkout,
-        entries: [...currentWorkout.entries, newEntry]
-      }
-    });
+    const updatedWorkout = {
+      ...currentWorkout,
+      entries: [...currentWorkout.entries, newEntry]
+    };
+
+    set({ currentWorkout: updatedWorkout });
+    saveToStorage(STORAGE_KEYS.currentWorkout, updatedWorkout);
   },
 
   updateWorkoutEntry: (index, entryUpdate) => {
@@ -195,59 +232,43 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     const newEntries = [...currentWorkout.entries];
     newEntries[index] = { ...newEntries[index], ...entryUpdate };
     
-    set({
-      currentWorkout: {
-        ...currentWorkout,
-        entries: newEntries
-      }
-    });
+    const updatedWorkout = {
+      ...currentWorkout,
+      entries: newEntries
+    };
+
+    set({ currentWorkout: updatedWorkout });
+    saveToStorage(STORAGE_KEYS.currentWorkout, updatedWorkout);
   },
 
   removeExerciseFromWorkout: (index) => {
     const { currentWorkout } = get();
     const newEntries = currentWorkout.entries.filter((_, i) => i !== index);
     
-    set({
-      currentWorkout: {
-        ...currentWorkout,
-        entries: newEntries
-      }
-    });
+    const updatedWorkout = {
+      ...currentWorkout,
+      entries: newEntries
+    };
+
+    set({ currentWorkout: updatedWorkout });
+    saveToStorage(STORAGE_KEYS.currentWorkout, updatedWorkout);
   },
 
-  saveWorkout: async () => {
-    const { user, currentWorkout } = get();
-    if (!user || currentWorkout.entries.length === 0) return false;
+  saveWorkout: () => {
+    const { currentWorkout, workoutSessions } = get();
+    if (currentWorkout.entries.length === 0) return false;
 
     try {
-      // Create workout session
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('workout_sessions')
-        .insert({
-          user_id: user.id,
-          date: currentWorkout.date
-        })
-        .select()
-        .single();
+      const newSession: WorkoutSession = {
+        id: generateId(),
+        date: currentWorkout.date,
+        entries: currentWorkout.entries,
+        created_at: new Date().toISOString()
+      };
 
-      if (sessionError) throw sessionError;
-
-      // Create workout entries
-      const entriesToInsert = currentWorkout.entries.map(entry => ({
-        session_id: sessionData.id,
-        exercise_id: entry.exercise_id,
-        sets: entry.sets as any, // Cast to any for JSON storage
-        custom_trackers: entry.custom_trackers as any // Cast to any for JSON storage
-      }));
-
-      const { error: entriesError } = await supabase
-        .from('workout_entries')
-        .insert(entriesToInsert);
-
-      if (entriesError) throw entriesError;
-
-      // Refresh workout history
-      get().fetchWorkoutHistory();
+      const updatedSessions = [newSession, ...workoutSessions];
+      saveToStorage(STORAGE_KEYS.workoutSessions, updatedSessions);
+      set({ workoutSessions: updatedSessions });
       
       // Clear current workout
       get().clearCurrentWorkout();
@@ -260,46 +281,23 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   },
 
   clearCurrentWorkout: () => {
-    set({
-      currentWorkout: {
-        date: new Date().toISOString().split('T')[0],
-        entries: []
-      }
-    });
+    const clearedWorkout = {
+      date: new Date().toISOString().split('T')[0],
+      entries: []
+    };
+    
+    set({ currentWorkout: clearedWorkout });
+    saveToStorage(STORAGE_KEYS.currentWorkout, clearedWorkout);
   },
 
   // History
-  fetchWorkoutHistory: async () => {
-    const { user } = get();
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('workout_sessions')
-        .select(`
-          *,
-          workout_entries (
-            *,
-            exercise_library (*)
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-
-      const formattedSessions: WorkoutSession[] = (data || []).map(session => ({
-        ...session,
-        entries: session.workout_entries?.map((entry: any) => ({
-          ...entry,
-          exercise: entry.exercise_library
-        })) || []
-      }));
-
-      set({ workoutSessions: formattedSessions });
-    } catch (error) {
-      console.error('Error fetching workout history:', error);
-    }
+  loadWorkoutHistory: () => {
+    const savedSessions = loadFromStorage(STORAGE_KEYS.workoutSessions, []);
+    // Sort by date descending (newest first)
+    const sortedSessions = savedSessions.sort((a: WorkoutSession, b: WorkoutSession) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    set({ workoutSessions: sortedSessions });
   },
 
   // Progress
