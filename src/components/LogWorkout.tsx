@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Plus, Save, Trash2, X } from 'lucide-react';
+import { Calendar, Plus, Save, Trash2, X, Copy } from 'lucide-react';
 import { ExerciseSelector } from './ExerciseSelector';
 import { CustomTrackerModal } from './CustomTrackerModal';
 import { useToast } from '@/hooks/use-toast';
@@ -14,11 +14,14 @@ import { useToast } from '@/hooks/use-toast';
 export const LogWorkout = () => {
   const {
     currentWorkout,
+    globalCustomTrackers,
     setCurrentWorkoutDate,
     removeExerciseFromWorkout,
     updateWorkoutEntry,
     saveWorkout,
     clearCurrentWorkout,
+    addGlobalCustomTracker,
+    duplicateSet,
     openModal,
     exercises
   } = useWorkoutStore();
@@ -56,7 +59,7 @@ export const LogWorkout = () => {
 
   const handleAddSet = (entryIndex: number) => {
     const entry = currentWorkout.entries[entryIndex];
-    const newSets = [...entry.sets, { weight: 0, reps: 0 }];
+    const newSets = [...entry.sets, { weight: 0, reps: 0, custom_values: {} }];
     updateWorkoutEntry(entryIndex, { sets: newSets });
   };
 
@@ -73,16 +76,26 @@ export const LogWorkout = () => {
     updateWorkoutEntry(entryIndex, { sets: newSets });
   };
 
+  const handleCustomValueChange = (entryIndex: number, setIndex: number, trackerName: string, value: string) => {
+    const entry = currentWorkout.entries[entryIndex];
+    const newSets = [...entry.sets];
+    newSets[setIndex] = { 
+      ...newSets[setIndex], 
+      custom_values: { ...newSets[setIndex].custom_values, [trackerName]: value }
+    };
+    updateWorkoutEntry(entryIndex, { sets: newSets });
+  };
+
   const handleCustomTrackerChange = (entryIndex: number, key: string, value: string) => {
     const entry = currentWorkout.entries[entryIndex];
     const newTrackers = { ...entry.custom_trackers, [key]: value };
     updateWorkoutEntry(entryIndex, { custom_trackers: newTrackers });
   };
 
-  const addCustomTracker = (entryIndex: number) => {
+  const addCustomTracker = () => {
     const key = prompt('Enter tracker name (e.g., RPE, Rest Time):');
-    if (key) {
-      handleCustomTrackerChange(entryIndex, key, '');
+    if (key && key.trim()) {
+      addGlobalCustomTracker(key.trim());
     }
   };
 
@@ -161,74 +174,88 @@ export const LogWorkout = () => {
                     </Button>
                   </div>
                   
+                  {/* Table Headers */}
+                  <div className="flex gap-2 items-center mb-2">
+                    <div className="w-8 text-sm font-medium text-muted-foreground">Set</div>
+                    <div className="flex-1 text-sm font-medium text-muted-foreground">Weight</div>
+                    <div className="flex-1 text-sm font-medium text-muted-foreground">Reps</div>
+                    {globalCustomTrackers.map(tracker => (
+                      <div key={tracker} className="flex-1 text-sm font-medium text-muted-foreground">
+                        {tracker}
+                      </div>
+                    ))}
+                    <div className="w-20 text-sm font-medium text-muted-foreground">Actions</div>
+                  </div>
+
+                  {/* Table Rows */}
                   {entry.sets.map((set, setIndex) => (
-                    <div key={setIndex} className="set-row">
-                      <span className="text-sm font-medium min-w-[2rem]">
+                    <div key={setIndex} className="flex gap-2 items-center">
+                      <span className="w-8 text-sm font-medium text-center">
                         {setIndex + 1}
                       </span>
-                      <div className="flex items-center space-x-2 flex-1">
-                        <div className="flex-1">
-                          <Label htmlFor={`weight-${entryIndex}-${setIndex}`} className="sr-only">Weight</Label>
-                          <Input
-                            id={`weight-${entryIndex}-${setIndex}`}
-                            type="number"
-                            placeholder="Weight"
-                            value={set.weight || ''}
-                            onChange={(e) => handleSetChange(entryIndex, setIndex, 'weight', e.target.value)}
-                            step="0.5"
-                            min="0"
-                          />
-                        </div>
-                        <span className="text-muted-foreground">×</span>
-                        <div className="flex-1">
-                          <Label htmlFor={`reps-${entryIndex}-${setIndex}`} className="sr-only">Reps</Label>
-                          <Input
-                            id={`reps-${entryIndex}-${setIndex}`}
-                            type="number"
-                            placeholder="Reps"
-                            value={set.reps || ''}
-                            onChange={(e) => handleSetChange(entryIndex, setIndex, 'reps', e.target.value)}
-                            min="0"
-                          />
-                        </div>
+                      <div className="flex-1">
+                        <Label htmlFor={`weight-${entryIndex}-${setIndex}`} className="sr-only">Weight</Label>
+                        <Input
+                          id={`weight-${entryIndex}-${setIndex}`}
+                          type="number"
+                          placeholder="Weight"
+                          value={set.weight || ''}
+                          onChange={(e) => handleSetChange(entryIndex, setIndex, 'weight', e.target.value)}
+                          step="0.5"
+                          min="0"
+                        />
                       </div>
-                      {entry.sets.length > 1 && (
+                      <div className="flex-1">
+                        <Label htmlFor={`reps-${entryIndex}-${setIndex}`} className="sr-only">Reps</Label>
+                        <Input
+                          id={`reps-${entryIndex}-${setIndex}`}
+                          type="number"
+                          placeholder="Reps"
+                          value={set.reps || ''}
+                          onChange={(e) => handleSetChange(entryIndex, setIndex, 'reps', e.target.value)}
+                          min="0"
+                        />
+                      </div>
+                      {globalCustomTrackers.map(tracker => (
+                        <div key={tracker} className="flex-1">
+                          <Label htmlFor={`tracker-${tracker}-${entryIndex}-${setIndex}`} className="sr-only">{tracker}</Label>
+                          <Input
+                            id={`tracker-${tracker}-${entryIndex}-${setIndex}`}
+                            type="text"
+                            placeholder={tracker}
+                            value={set.custom_values[tracker] || ''}
+                            onChange={(e) => handleCustomValueChange(entryIndex, setIndex, tracker, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                      <div className="w-20 flex items-center justify-center space-x-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveSet(entryIndex, setIndex)}
+                          onClick={() => duplicateSet(entryIndex, setIndex)}
+                          title="Duplicate set"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Copy className="h-3 w-3" />
                         </Button>
-                      )}
+                        {entry.sets.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveSet(entryIndex, setIndex)}
+                            title="Remove set"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Custom Trackers */}
-                {Object.keys(entry.custom_trackers).length > 0 && (
-                  <>
-                    <Separator />
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Custom Trackers</h4>
-                      {Object.entries(entry.custom_trackers).map(([key, value]) => (
-                        <div key={key} className="flex items-center space-x-2">
-                          <Label className="min-w-[4rem] text-sm">{key}:</Label>
-                          <Input
-                            value={value as string}
-                            onChange={(e) => handleCustomTrackerChange(entryIndex, key, e.target.value)}
-                            placeholder={`Enter ${key.toLowerCase()}`}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => addCustomTracker(entryIndex)}
+                  onClick={() => addCustomTracker()}
                   className="w-full"
                 >
                   <Plus className="h-3 w-3 mr-1" />

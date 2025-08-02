@@ -12,6 +12,7 @@ export interface Exercise {
 export interface WorkoutSet {
   weight: number;
   reps: number;
+  custom_values: Record<string, string>;
   id?: string;
 }
 
@@ -111,6 +112,7 @@ interface WorkoutState {
   // Data
   exercises: Exercise[];
   workoutSessions: WorkoutSession[];
+  globalCustomTrackers: string[];
   currentWorkout: {
     date: string;
     entries: WorkoutEntry[];
@@ -139,6 +141,8 @@ interface WorkoutState {
   removeExerciseFromWorkout: (index: number) => void;
   saveWorkout: () => boolean;
   clearCurrentWorkout: () => void;
+  addGlobalCustomTracker: (name: string) => void;
+  duplicateSet: (entryIndex: number, setIndex: number) => void;
   
   // History actions
   loadWorkoutHistory: () => void;
@@ -157,6 +161,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   activePage: 'log',
   exercises: [],
   workoutSessions: [],
+  globalCustomTrackers: [],
   currentWorkout: {
     date: new Date().toISOString().split('T')[0],
     entries: []
@@ -214,7 +219,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       id: generateId(),
       exercise_id: exerciseId,
       exercise,
-      sets: [{ weight: 0, reps: 0 }],
+      sets: [{ weight: 0, reps: 0, custom_values: {} }],
       custom_trackers: {}
     };
 
@@ -288,6 +293,25 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     
     set({ currentWorkout: clearedWorkout });
     saveToStorage(STORAGE_KEYS.currentWorkout, clearedWorkout);
+  },
+
+  addGlobalCustomTracker: (name) => {
+    const { globalCustomTrackers } = get();
+    if (!globalCustomTrackers.includes(name)) {
+      const updatedTrackers = [...globalCustomTrackers, name];
+      set({ globalCustomTrackers: updatedTrackers });
+    }
+  },
+
+  duplicateSet: (entryIndex, setIndex) => {
+    const { currentWorkout } = get();
+    const entry = currentWorkout.entries[entryIndex];
+    const setToDuplicate = entry.sets[setIndex];
+    const newSet = { ...setToDuplicate };
+    const newSets = [...entry.sets];
+    newSets.splice(setIndex + 1, 0, newSet);
+    
+    get().updateWorkoutEntry(entryIndex, { sets: newSets });
   },
 
   // History
