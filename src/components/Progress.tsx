@@ -92,14 +92,14 @@ export const Progress = () => {
             <Select
               value={progressFilter?.type === 'exercise' ? progressFilter.value : ''}
               onValueChange={(value) => 
-                setProgressFilter(value ? { type: 'exercise', value } : null)
+                setProgressFilter(value && value !== 'all' ? { type: 'exercise', value } : null)
               }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select an exercise" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All exercises</SelectItem>
+                <SelectItem value="all">All exercises</SelectItem>
                 {exercises.map(exercise => (
                   <SelectItem key={exercise.id} value={exercise.id}>
                     {exercise.name}
@@ -118,14 +118,14 @@ export const Progress = () => {
             <Select
               value={progressFilter?.type === 'muscle_group' ? progressFilter.value : ''}
               onValueChange={(value) => 
-                setProgressFilter(value ? { type: 'muscle_group', value } : null)
+                setProgressFilter(value && value !== 'all' ? { type: 'muscle_group', value } : null)
               }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select a muscle group" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All muscle groups</SelectItem>
+                <SelectItem value="all">All muscle groups</SelectItem>
                 {MUSCLE_GROUPS.map(group => (
                   <SelectItem key={group} value={group}>
                     {group}

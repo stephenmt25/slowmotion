@@ -33,7 +33,7 @@ export const ExerciseSelector = () => {
   // Filter exercises based on search and muscle group
   const filteredExercises = exercises.filter(exercise => {
     const matchesSearch = exercise.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMuscleGroup = !selectedMuscleGroup || exercise.muscle_group === selectedMuscleGroup;
+    const matchesMuscleGroup = !selectedMuscleGroup || selectedMuscleGroup === 'all' || exercise.muscle_group === selectedMuscleGroup;
     return matchesSearch && matchesMuscleGroup;
   });
 
@@ -144,7 +144,7 @@ export const ExerciseSelector = () => {
                 <SelectValue placeholder="All muscle groups" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All muscle groups</SelectItem>
+                <SelectItem value="all">All muscle groups</SelectItem>
                 {MUSCLE_GROUPS.map(group => (
                   <SelectItem key={group} value={group}>
                     {group}
