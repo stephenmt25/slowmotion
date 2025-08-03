@@ -1,6 +1,7 @@
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Button } from '@/components/ui/button';
 import { Dumbbell, History, TrendingUp, Plus } from 'lucide-react';
+import { SyncStatusIndicator } from './SyncStatusIndicator';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -47,8 +48,9 @@ export const Layout = ({ children }: LayoutProps) => {
               })}
             </nav>
 
-            {/* App Title */}
-            <div className="hidden sm:block">
+            {/* Sync Status & App Title */}
+            <div className="hidden sm:flex items-center space-x-4">
+              <SyncStatusIndicator />
               <span className="text-sm text-muted-foreground">Personal Gym Tracker</span>
             </div>
           </div>

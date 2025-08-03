@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { SupabaseStorageService, type SyncStatus } from '@/services/supabaseStorage';
 
 // Types
 export interface Exercise {
@@ -7,6 +8,7 @@ export interface Exercise {
   muscle_group: string;
   created_by?: string;
   is_default?: boolean;
+  isCustom?: boolean;
 }
 
 export interface WorkoutSet {
@@ -28,6 +30,7 @@ export interface WorkoutSession {
   id: string;
   date: string;
   entries?: WorkoutEntry[];
+  exercises?: WorkoutEntry[];
   created_at?: string;
 }
 
@@ -44,6 +47,7 @@ const STORAGE_KEYS = {
   exercises: 'gym-tracker-exercises',
   workoutSessions: 'gym-tracker-sessions',
   currentWorkout: 'gym-tracker-current-workout',
+  globalCustomTrackers: 'gym-tracker-global-trackers',
 } as const;
 
 // Default Exercises
@@ -112,7 +116,7 @@ interface WorkoutState {
   // Data
   exercises: Exercise[];
   workoutSessions: WorkoutSession[];
-  globalCustomTrackers: string[];
+  globalCustomTrackers: Array<{ name: string; unit: string }>;
   currentWorkout: {
     date: string;
     entries: WorkoutEntry[];
@@ -126,6 +130,9 @@ interface WorkoutState {
     type: 'exercise' | 'muscle_group';
     value: string;
   } | null;
+
+  // Sync State
+  syncStatus: SyncStatus;
   
   // Actions
   setPage: (page: WorkoutState['activePage']) => void;
@@ -141,7 +148,7 @@ interface WorkoutState {
   removeExerciseFromWorkout: (index: number) => void;
   saveWorkout: () => boolean;
   clearCurrentWorkout: () => void;
-  addGlobalCustomTracker: (name: string) => void;
+  addGlobalCustomTracker: (name: string, unit: string) => void;
   duplicateSet: (entryIndex: number, setIndex: number) => void;
   
   // History actions
@@ -154,6 +161,11 @@ interface WorkoutState {
   // Modal actions
   openModal: (type: 'exercise' | 'custom-tracker', exerciseId?: string) => void;
   closeModal: () => void;
+
+  // Sync Actions
+  syncToSupabase: () => Promise<void>;
+  loadFromSupabase: () => Promise<void>;
+  setSyncStatus: (status: SyncStatus) => void;
 }
 
 export const useWorkoutStore = create<WorkoutState>((set, get) => ({
@@ -161,7 +173,7 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   activePage: 'log',
   exercises: [],
   workoutSessions: [],
-  globalCustomTrackers: [],
+  globalCustomTrackers: loadFromStorage(STORAGE_KEYS.globalCustomTrackers, []),
   currentWorkout: {
     date: new Date().toISOString().split('T')[0],
     entries: []
@@ -170,6 +182,14 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   modalType: null,
   selectedExerciseId: null,
   progressFilter: null,
+
+  // Sync State
+  syncStatus: {
+    isOnline: false,
+    lastSync: null,
+    pendingChanges: 0,
+    syncError: null,
+  },
 
   // Navigation
   setPage: (page) => set({ activePage: page }),
@@ -295,11 +315,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     saveToStorage(STORAGE_KEYS.currentWorkout, clearedWorkout);
   },
 
-  addGlobalCustomTracker: (name) => {
+  addGlobalCustomTracker: (name, unit) => {
     const { globalCustomTrackers } = get();
-    if (!globalCustomTrackers.includes(name)) {
-      const updatedTrackers = [...globalCustomTrackers, name];
+    const exists = globalCustomTrackers.some(tracker => tracker.name === name);
+    if (!exists) {
+      const updatedTrackers = [...globalCustomTrackers, { name, unit }];
       set({ globalCustomTrackers: updatedTrackers });
+      saveToStorage(STORAGE_KEYS.globalCustomTrackers, updatedTrackers);
     }
   },
 
@@ -394,5 +416,85 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       modalType: null,
       selectedExerciseId: null
     });
+  },
+
+  // Sync Actions
+  syncToSupabase: async () => {
+    const state = get();
+    try {
+      set((prev) => ({
+        syncStatus: { ...prev.syncStatus, syncError: null }
+      }));
+
+      await SupabaseStorageService.syncCustomExercises(state.exercises);
+      await SupabaseStorageService.syncCustomTrackers(state.globalCustomTrackers);
+      await SupabaseStorageService.syncWorkoutSessions(state.workoutSessions);
+
+      set((prev) => ({
+        syncStatus: {
+          ...prev.syncStatus,
+          isOnline: true,
+          lastSync: new Date(),
+          pendingChanges: 0,
+          syncError: null,
+        }
+      }));
+    } catch (error) {
+      console.error('Sync to Supabase failed:', error);
+      set((prev) => ({
+        syncStatus: {
+          ...prev.syncStatus,
+          syncError: error instanceof Error ? error.message : 'Sync failed'
+        }
+      }));
+      throw error;
+    }
+  },
+
+  loadFromSupabase: async () => {
+    try {
+      const [customExercises, customTrackers, sessions] = await Promise.all([
+        SupabaseStorageService.loadCustomExercises(),
+        SupabaseStorageService.loadCustomTrackers(),
+        SupabaseStorageService.loadWorkoutSessions(),
+      ]);
+
+      set((state) => {
+        // Merge custom exercises with default ones
+        const defaultExercises = state.exercises.filter(ex => !ex.isCustom);
+        const allExercises = [...defaultExercises, ...customExercises];
+
+        return {
+          exercises: allExercises,
+          globalCustomTrackers: customTrackers,
+          workoutSessions: sessions,
+          syncStatus: {
+            ...state.syncStatus,
+            isOnline: true,
+            lastSync: new Date(),
+            pendingChanges: 0,
+            syncError: null,
+          }
+        };
+      });
+
+      // Update localStorage with synced data
+      saveToStorage(STORAGE_KEYS.exercises, get().exercises);
+      saveToStorage(STORAGE_KEYS.globalCustomTrackers, get().globalCustomTrackers);
+      saveToStorage(STORAGE_KEYS.workoutSessions, get().workoutSessions);
+    } catch (error) {
+      console.error('Load from Supabase failed:', error);
+      set((prev) => ({
+        syncStatus: {
+          ...prev.syncStatus,
+          syncError: error instanceof Error ? error.message : 'Load failed'
+        }
+      }));
+      throw error;
+    }
+  },
+
+  setSyncStatus: (status: SyncStatus) => {
+    set({ syncStatus: status });
   },
 }));

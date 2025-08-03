@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      device_users: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          last_active: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          last_active?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          last_active?: string
+        }
+        Relationships: []
+      }
       exercise_library: {
         Row: {
           created_at: string
@@ -38,6 +59,57 @@ export type Database = {
           is_default?: boolean | null
           muscle_group?: string
           name?: string
+        }
+        Relationships: []
+      }
+      user_custom_trackers: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          name: string
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          name: string
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          name?: string
+          unit?: string
+        }
+        Relationships: []
+      }
+      user_exercises: {
+        Row: {
+          created_at: string
+          device_id: string
+          id: string
+          muscle_group: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          id?: string
+          muscle_group: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          id?: string
+          muscle_group?: string
+          name?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -87,6 +159,7 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          device_id: string | null
           id: string
           updated_at: string
           user_id: string
@@ -94,6 +167,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date?: string
+          device_id?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -101,6 +175,7 @@ export type Database = {
         Update: {
           created_at?: string
           date?: string
+          device_id?: string | null
           id?: string
           updated_at?: string
           user_id?: string

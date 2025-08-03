@@ -37,7 +37,7 @@ export const CustomTrackerModal = ({ isOpen, onClose }: CustomTrackerModalProps)
       ? trackerName.trim() 
       : `${trackerName.trim()} (${trackerUnit})`;
     
-    addGlobalCustomTracker(trackerDisplayName);
+    addGlobalCustomTracker(trackerName.trim(), trackerUnit);
 
     // Reset and close
     setTrackerName('');
