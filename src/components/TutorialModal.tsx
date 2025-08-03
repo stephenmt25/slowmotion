@@ -29,19 +29,6 @@ export const TutorialModal = () => {
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Warning about data loss */}
-          <div className="bg-warning/10 border border-warning/20 rounded-lg p-4 flex items-start space-x-3">
-            <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
-            <div>
-              <h4 className="font-semibold text-warning">Important: Data Storage</h4>
-              <p className="text-sm text-muted-foreground mt-1">
-                Your workout data is stored locally in your browser. Clearing browser data, 
-                switching devices, or closing this tab permanently will result in data loss. 
-                Consider exporting your data regularly or keeping this tab open during workouts.
-              </p>
-            </div>
-          </div>
-
           {/* How to use */}
           <div className="space-y-4">
             <h3 className="font-semibold">How to use Gym Tracker:</h3>
