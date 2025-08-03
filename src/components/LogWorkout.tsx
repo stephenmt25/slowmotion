@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar, Plus, Save, Trash2, X, Copy } from 'lucide-react';
 import { ExerciseSelector } from './ExerciseSelector';
 import { CustomTrackerModal } from './CustomTrackerModal';
+import { TutorialModal } from './TutorialModal';
 import { useToast } from '@/hooks/use-toast';
 
 export const LogWorkout = () => {
@@ -92,11 +94,11 @@ export const LogWorkout = () => {
     updateWorkoutEntry(entryIndex, { custom_trackers: newTrackers });
   };
 
+  const [isExerciseSelectorOpen, setIsExerciseSelectorOpen] = useState(false);
+  const [isCustomTrackerModalOpen, setIsCustomTrackerModalOpen] = useState(false);
+
   const addCustomTracker = () => {
-    const key = prompt('Enter tracker name (e.g., RPE, Rest Time):');
-    if (key && key.trim()) {
-      addGlobalCustomTracker(key.trim());
-    }
+    setIsCustomTrackerModalOpen(true);
   };
 
   return (
@@ -124,8 +126,29 @@ export const LogWorkout = () => {
         </div>
       </div>
 
-      {/* Exercise Selector */}
-      <ExerciseSelector />
+      {/* Add Exercise Button */}
+      <Card>
+        <CardContent className="p-6">
+          <Button 
+            onClick={() => setIsExerciseSelectorOpen(true)}
+            className="w-full"
+            size="lg"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Add Exercise
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Exercise Selector Modal */}
+      <Dialog open={isExerciseSelectorOpen} onOpenChange={setIsExerciseSelectorOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Select Exercise</DialogTitle>
+          </DialogHeader>
+          <ExerciseSelector onExerciseSelect={() => setIsExerciseSelectorOpen(false)} />
+        </DialogContent>
+      </Dialog>
 
       {/* Current Workout */}
       <div className="space-y-4">
@@ -288,7 +311,11 @@ export const LogWorkout = () => {
         </div>
       )}
 
-      <CustomTrackerModal />
+      <CustomTrackerModal 
+        isOpen={isCustomTrackerModalOpen}
+        onClose={() => setIsCustomTrackerModalOpen(false)}
+      />
+      <TutorialModal />
     </div>
   );
 };

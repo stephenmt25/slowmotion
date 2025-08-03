@@ -3,43 +3,50 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-export const CustomTrackerModal = () => {
-  const { isModalOpen, modalType, selectedExerciseId, closeModal, updateWorkoutEntry, currentWorkout } = useWorkoutStore();
-  const [trackerName, setTrackerName] = useState('');
-  const [trackerValue, setTrackerValue] = useState('');
+interface CustomTrackerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
 
-  const isCustomTrackerModal = isModalOpen && modalType === 'custom-tracker';
+const TRACKER_UNITS = [
+  'none',
+  'seconds',
+  'minutes',
+  'kg',
+  'lbs',
+  'reps',
+  'sets',
+  'RPE (1-10)',
+  '%',
+  'cm',
+  'inches'
+];
+
+export const CustomTrackerModal = ({ isOpen, onClose }: CustomTrackerModalProps) => {
+  const { addGlobalCustomTracker } = useWorkoutStore();
+  const [trackerName, setTrackerName] = useState('');
+  const [trackerUnit, setTrackerUnit] = useState('none');
 
   const handleAddTracker = () => {
-    if (!trackerName.trim() || selectedExerciseId === null) return;
+    if (!trackerName.trim()) return;
 
-    // Find the exercise index in current workout
-    const exerciseIndex = currentWorkout.entries.findIndex(
-      entry => entry.exercise_id === selectedExerciseId
-    );
-
-    if (exerciseIndex !== -1) {
-      const entry = currentWorkout.entries[exerciseIndex];
-      const newTrackers = {
-        ...entry.custom_trackers,
-        [trackerName.trim()]: trackerValue
-      };
-      
-      updateWorkoutEntry(exerciseIndex, { custom_trackers: newTrackers });
-    }
+    const trackerDisplayName = trackerUnit === 'none' 
+      ? trackerName.trim() 
+      : `${trackerName.trim()} (${trackerUnit})`;
+    
+    addGlobalCustomTracker(trackerDisplayName);
 
     // Reset and close
     setTrackerName('');
-    setTrackerValue('');
-    closeModal();
+    setTrackerUnit('none');
+    onClose();
   };
 
-  if (!isCustomTrackerModal) return null;
-
   return (
-    <Dialog open={isCustomTrackerModal} onOpenChange={closeModal}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Custom Tracker</DialogTitle>
@@ -55,19 +62,25 @@ export const CustomTrackerModal = () => {
             />
           </div>
           <div>
-            <Label htmlFor="tracker-value">Value</Label>
-            <Input
-              id="tracker-value"
-              value={trackerValue}
-              onChange={(e) => setTrackerValue(e.target.value)}
-              placeholder="Enter initial value (optional)"
-            />
+            <Label htmlFor="tracker-unit">Unit</Label>
+            <Select value={trackerUnit} onValueChange={setTrackerUnit}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select unit" />
+              </SelectTrigger>
+              <SelectContent>
+                {TRACKER_UNITS.map(unit => (
+                  <SelectItem key={unit} value={unit}>
+                    {unit === 'none' ? 'No unit' : unit}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex gap-2">
             <Button onClick={handleAddTracker} className="flex-1">
               Add Tracker
             </Button>
-            <Button variant="outline" onClick={closeModal}>
+            <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
           </div>

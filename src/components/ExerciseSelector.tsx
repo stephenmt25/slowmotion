@@ -20,7 +20,11 @@ const MUSCLE_GROUPS = [
   'Core'
 ];
 
-export const ExerciseSelector = () => {
+interface ExerciseSelectorProps {
+  onExerciseSelect?: () => void;
+}
+
+export const ExerciseSelector = ({ onExerciseSelect }: ExerciseSelectorProps) => {
   const { exercises, addExerciseToWorkout, addCustomExercise } = useWorkoutStore();
   const { toast } = useToast();
   
@@ -40,6 +44,7 @@ export const ExerciseSelector = () => {
   const handleSelectExercise = (exerciseId: string) => {
     addExerciseToWorkout(exerciseId);
     setSearchTerm('');
+    onExerciseSelect?.();
   };
 
   const handleAddCustomExercise = async () => {
@@ -59,6 +64,7 @@ export const ExerciseSelector = () => {
       setIsAddDialogOpen(false);
       setNewExerciseName('');
       setNewExerciseMuscleGroup('');
+      onExerciseSelect?.();
       toast({
         title: "Exercise added!",
         description: `${newExercise.name} has been added to your workout.`,
@@ -73,9 +79,7 @@ export const ExerciseSelector = () => {
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="space-y-4">
+    <div className="space-y-4">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h3 className="text-lg font-semibold">Add Exercise</h3>
@@ -176,8 +180,6 @@ export const ExerciseSelector = () => {
               ))
             )}
           </div>
-        </div>
-      </CardContent>
-    </Card>
+    </div>
   );
 };

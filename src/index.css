@@ -169,4 +169,20 @@
   .progress-chart {
     @apply bg-card border border-border rounded-lg p-6;
   }
+  
+  /* Fix dropdown backgrounds */
+  [data-radix-select-content] {
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+  }
+  
+  [data-radix-dropdown-menu-content] {
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+  }
+  
+  [data-radix-popover-content] {
+    background-color: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+  }
 }
