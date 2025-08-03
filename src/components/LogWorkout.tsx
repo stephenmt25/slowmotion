@@ -202,11 +202,11 @@ export const LogWorkout = () => {
                     <div className="w-8 text-sm font-medium text-muted-foreground">Set</div>
                     <div className="flex-1 text-sm font-medium text-muted-foreground">Weight</div>
                     <div className="flex-1 text-sm font-medium text-muted-foreground">Reps</div>
-                    {globalCustomTrackers.map(tracker => (
-                      <div key={tracker} className="flex-1 text-sm font-medium text-muted-foreground">
-                        {tracker}
-                      </div>
-                    ))}
+                     {globalCustomTrackers.map((tracker, index) => (
+                       <div key={index} className="flex-1 text-sm font-medium text-muted-foreground">
+                         {tracker.name}{tracker.unit !== 'none' ? ` (${tracker.unit})` : ''}
+                       </div>
+                     ))}
                     <div className="w-20 text-sm font-medium text-muted-foreground">Actions</div>
                   </div>
 
@@ -239,18 +239,18 @@ export const LogWorkout = () => {
                           min="0"
                         />
                       </div>
-                      {globalCustomTrackers.map(tracker => (
-                        <div key={tracker} className="flex-1">
-                          <Label htmlFor={`tracker-${tracker}-${entryIndex}-${setIndex}`} className="sr-only">{tracker}</Label>
-                          <Input
-                            id={`tracker-${tracker}-${entryIndex}-${setIndex}`}
-                            type="text"
-                            placeholder={tracker}
-                            value={set.custom_values[tracker] || ''}
-                            onChange={(e) => handleCustomValueChange(entryIndex, setIndex, tracker, e.target.value)}
-                          />
-                        </div>
-                      ))}
+                       {globalCustomTrackers.map((tracker, trackerIndex) => (
+                         <div key={trackerIndex} className="flex-1">
+                           <Label htmlFor={`tracker-${tracker.name}-${entryIndex}-${setIndex}`} className="sr-only">{tracker.name}</Label>
+                           <Input
+                             id={`tracker-${tracker.name}-${entryIndex}-${setIndex}`}
+                             type="text"
+                             placeholder={tracker.name}
+                             value={set.custom_values[tracker.name] || ''}
+                             onChange={(e) => handleCustomValueChange(entryIndex, setIndex, tracker.name, e.target.value)}
+                           />
+                         </div>
+                       ))}
                       <div className="w-20 flex items-center justify-center space-x-1">
                         <Button
                           variant="ghost"

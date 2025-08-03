@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useWorkoutStore } from '@/stores/workoutStore';
+import { useLifecycleSync } from '@/hooks/useLifecycleSync';
 import { Layout } from '@/components/Layout';
 import { LogWorkout } from '@/components/LogWorkout';
 import { History } from '@/components/History';
@@ -7,9 +8,12 @@ import { Progress } from '@/components/Progress';
 
 const Index = () => {
   const { activePage, loadExercises, loadWorkoutHistory } = useWorkoutStore();
+  
+  // Initialize sync functionality
+  useLifecycleSync();
 
   useEffect(() => {
-    // Initialize data from local storage
+    // Initialize data from local storage (fallback)
     loadExercises();
     loadWorkoutHistory();
   }, [loadExercises, loadWorkoutHistory]);
