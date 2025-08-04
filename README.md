@@ -1,10 +1,10 @@
-# Set See Strength
+# SlowMotion
 
 A modern web application for tracking and visualizing strength training progress.
 
 ## Overview
 
-Set See Strength is a comprehensive fitness tracking application that helps users monitor their strength training journey. Built with modern web technologies, it provides an intuitive interface for logging workouts, analyzing progress, and achieving fitness goals.
+SlowMotion is a comprehensive fitness tracking application that helps users monitor their strength training journey. Built with modern web technologies, it provides an intuitive interface for logging workouts, analyzing progress, and achieving fitness goals.
 
 ## Features
 
@@ -39,6 +39,5 @@ This application is built using modern web technologies:
 - **Frontend Framework**: React with TypeScript
 - **Styling**: Tailwind CSS with shadcn-ui components
 - **Build Tool**: Vite
-- **State Management**: [Add your state management solution]
-- **Authentication**: [Add your auth solution]
-- **Database**: [Add your database solution]
+- **State Management**: Zustand
+- **Database**: Supabase
