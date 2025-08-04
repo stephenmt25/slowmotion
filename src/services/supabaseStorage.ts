@@ -14,30 +14,54 @@ export class SupabaseStorageService {
 
   // Set device ID in Supabase context for RLS policies
   private static async setDeviceContext() {
-    // For now, we'll use simpler approach without set_config
-    // The device_id will be included in queries directly
+    try {
+      console.log('Setting device context for device:', this.deviceId);
+      const { error } = await supabase.rpc('set_config', {
+        setting_name: 'app.device_id',
+        setting_value: this.deviceId,
+        is_local: true
+      });
+      
+      if (error) {
+        console.error('Failed to set device context:', error);
+        throw new Error(`Device context setup failed: ${error.message}`);
+      }
+      
+      console.log('Device context set successfully');
+    } catch (error) {
+      console.error('Error setting device context:', error);
+      throw error;
+    }
   }
 
   // Sync custom exercises to Supabase
   static async syncCustomExercises(exercises: Exercise[]): Promise<void> {
-    await this.setDeviceContext();
-    
-    const customExercises = exercises.filter(ex => ex.isCustom);
-    
-    for (const exercise of customExercises) {
-      const { error } = await supabase
-        .from('user_exercises')
-        .upsert({
-          id: exercise.id,
-          device_id: this.deviceId,
-          name: exercise.name,
-          muscle_group: exercise.muscle_group,
-        }, { onConflict: 'id' });
+    try {
+      console.log('Syncing custom exercises, count:', exercises.filter(ex => ex.isCustom).length);
+      await this.setDeviceContext();
+      
+      const customExercises = exercises.filter(ex => ex.isCustom);
+      
+      for (const exercise of customExercises) {
+        const { error } = await supabase
+          .from('user_exercises')
+          .upsert({
+            id: exercise.id,
+            device_id: this.deviceId,
+            name: exercise.name,
+            muscle_group: exercise.muscle_group,
+          }, { onConflict: 'id' });
 
-      if (error) {
-        console.error('Error syncing exercise:', error);
-        throw error;
+        if (error) {
+          console.error('Error syncing exercise:', error);
+          throw new Error(`Failed to sync exercise "${exercise.name}": ${error.message}`);
+        }
       }
+      
+      console.log('Custom exercises synced successfully');
+    } catch (error) {
+      console.error('syncCustomExercises failed:', error);
+      throw error;
     }
   }
 
@@ -223,17 +247,44 @@ export class SupabaseStorageService {
 
   // Register device user
   static async registerDevice(): Promise<void> {
-    await this.setDeviceContext();
-    
-    const { error } = await supabase
-      .from('device_users')
-      .upsert({
-        device_id: this.deviceId,
-        last_active: new Date().toISOString(),
-      }, { onConflict: 'device_id' });
+    try {
+      console.log('Registering device:', this.deviceId);
+      await this.setDeviceContext();
+      
+      const { error } = await supabase
+        .from('device_users')
+        .upsert({
+          device_id: this.deviceId,
+          last_active: new Date().toISOString(),
+        }, { onConflict: 'device_id' });
 
-    if (error) {
-      console.error('Error registering device:', error);
+      if (error) {
+        console.error('Error registering device:', error);
+        throw new Error(`Device registration failed: ${error.message}`);
+      }
+      
+      console.log('Device registered successfully');
+    } catch (error) {
+      console.error('registerDevice failed:', error);
+      throw error;
+    }
+  }
+
+  // Manual sync function for user-triggered sync
+  static async manualSync(workoutStore: any): Promise<void> {
+    try {
+      console.log('Starting manual sync...');
+      await this.registerDevice();
+      
+      // Sync all data
+      await this.syncCustomExercises(workoutStore.exercises);
+      await this.syncCustomTrackers(workoutStore.globalCustomTrackers);
+      await this.syncWorkoutSessions(workoutStore.workoutSessions);
+      
+      console.log('Manual sync completed successfully');
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      throw error;
     }
   }
 }

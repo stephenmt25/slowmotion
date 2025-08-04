@@ -78,26 +78,41 @@ export const useLifecycleSync = () => {
   useEffect(() => {
     const initializeSync = async () => {
       try {
+        console.log('Initializing sync...');
         setSyncStatus({ isOnline: false, lastSync: null, pendingChanges: 0, syncError: null });
+        
+        // Check if we have local data first
+        const hasLocalData = exercises.length > 0 || workoutSessions.length > 0;
+        console.log('Has local data:', hasLocalData);
         
         // Register device
         await SupabaseStorageService.registerDevice();
         
         // Check connectivity
         const isOnline = await SupabaseStorageService.checkConnectivity();
+        console.log('Is online:', isOnline);
         
         if (isOnline) {
-          // Load from Supabase if online
-          await loadFromSupabase();
+          // Only load from Supabase if we don't have newer local data
+          if (!hasLocalData) {
+            console.log('Loading from Supabase (no local data)...');
+            await loadFromSupabase();
+          } else {
+            console.log('Keeping local data, syncing to cloud...');
+            // Sync local data to cloud
+            await syncToSupabase();
+          }
+          
           setSyncStatus({ 
             isOnline: true, 
             lastSync: new Date(), 
             pendingChanges: 0, 
             syncError: null 
           });
+          
           toast({
             title: "Data synced",
-            description: "Your workout data has been loaded from the cloud.",
+            description: hasLocalData ? "Your local data has been synced to the cloud." : "Your workout data has been loaded from the cloud.",
           });
         } else {
           setSyncStatus({ 
@@ -106,6 +121,14 @@ export const useLifecycleSync = () => {
             pendingChanges: 0, 
             syncError: 'No internet connection' 
           });
+          
+          if (!hasLocalData) {
+            toast({
+              title: "Offline mode",
+              description: "No internet connection. Your data will sync when you're back online.",
+              variant: "destructive",
+            });
+          }
         }
       } catch (error) {
         console.error('Initialization failed:', error);
@@ -113,11 +136,17 @@ export const useLifecycleSync = () => {
           isOnline: false, 
           lastSync: null, 
           pendingChanges: 0, 
-          syncError: 'Failed to initialize sync' 
+          syncError: error instanceof Error ? error.message : 'Failed to initialize sync'
+        });
+        
+        toast({
+          title: "Sync error",
+          description: "Failed to initialize sync. Your data is saved locally.",
+          variant: "destructive",
         });
       }
     };
 
     initializeSync();
-  }, [loadFromSupabase, setSyncStatus]);
+  }, [loadFromSupabase, setSyncStatus, syncToSupabase]);
 };
