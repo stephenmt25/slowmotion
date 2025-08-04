@@ -1,73 +1,44 @@
-# Welcome to your Lovable project
+# Set See Strength
 
-## Project info
+A modern web application for tracking and visualizing strength training progress.
 
-**URL**: https://lovable.dev/projects/ab271b0e-66f7-461a-ad9d-77df186f0803
+## Overview
 
-## How can I edit this code?
+Set See Strength is a comprehensive fitness tracking application that helps users monitor their strength training journey. Built with modern web technologies, it provides an intuitive interface for logging workouts, analyzing progress, and achieving fitness goals.
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+### 🏋️ Workout Tracking
+- Log exercises, sets, reps, and weights
+- Track rest periods between sets
+- Add notes for each workout session
+- Support for multiple workout types
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ab271b0e-66f7-461a-ad9d-77df186f0803) and start prompting.
+### 📊 Progress Visualization
+- Interactive charts showing strength progression
+- Historical performance data
+- Personal record (PR) tracking
+- Custom progress metrics
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🎯 Goal Setting
+- Set specific strength targets
+- Track progress towards goals
+- Milestone celebrations
+- Customizable goal timeframes
 
-**Use your preferred IDE**
+### 📱 User Experience
+- Responsive design for all devices
+- Dark/light mode support
+- Intuitive, user-friendly interface
+- Quick-entry workout modes
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Technical Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+This application is built using modern web technologies:
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/ab271b0e-66f7-461a-ad9d-77df186f0803) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- **Frontend Framework**: React with TypeScript
+- **Styling**: Tailwind CSS with shadcn-ui components
+- **Build Tool**: Vite
+- **State Management**: [Add your state management solution]
+- **Authentication**: [Add your auth solution]
+- **Database**: [Add your database solution]
