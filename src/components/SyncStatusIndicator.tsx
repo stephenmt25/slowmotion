@@ -1,9 +1,14 @@
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { Badge } from '@/components/ui/badge';
-import { Cloud, CloudOff, Wifi, WifiOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Cloud, CloudOff, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { SupabaseStorageService } from '@/services/supabaseStorage';
+import { toast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 export const SyncStatusIndicator = () => {
-  const { syncStatus } = useWorkoutStore();
+  const { syncStatus, exercises, workoutSessions, globalCustomTrackers, setSyncStatus } = useWorkoutStore();
+  const [isManualSyncing, setIsManualSyncing] = useState(false);
 
   const getStatusColor = () => {
     if (syncStatus.syncError) return 'destructive';
@@ -30,10 +35,69 @@ export const SyncStatusIndicator = () => {
     return 'Online';
   };
 
+  const handleManualSync = async () => {
+    if (isManualSyncing) return;
+    
+    setIsManualSyncing(true);
+    try {
+      setSyncStatus({ 
+        ...syncStatus, 
+        syncError: null 
+      });
+
+      await SupabaseStorageService.manualSync({
+        exercises,
+        workoutSessions,
+        globalCustomTrackers
+      });
+
+      setSyncStatus({
+        isOnline: true,
+        lastSync: new Date(),
+        pendingChanges: 0,
+        syncError: null
+      });
+
+      toast({
+        title: "Sync successful",
+        description: "Your workout data has been synced to the cloud.",
+      });
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      setSyncStatus({
+        ...syncStatus,
+        syncError: error instanceof Error ? error.message : 'Manual sync failed'
+      });
+
+      toast({
+        title: "Sync failed",
+        description: "Failed to sync your data. Check your connection and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsManualSyncing(false);
+    }
+  };
+
   return (
-    <Badge variant={getStatusColor()} className="text-xs flex items-center gap-1">
-      {getStatusIcon()}
-      {getStatusText()}
-    </Badge>
+    <div className="flex items-center gap-2">
+      <Badge variant={getStatusColor()} className="text-xs flex items-center gap-1">
+        {getStatusIcon()}
+        {getStatusText()}
+      </Badge>
+      
+      {(syncStatus.syncError || !syncStatus.isOnline) && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleManualSync}
+          disabled={isManualSyncing}
+          className="h-6 px-2 text-xs"
+        >
+          <RefreshCw className={`h-3 w-3 ${isManualSyncing ? 'animate-spin' : ''}`} />
+          Retry
+        </Button>
+      )}
+    </div>
   );
 };
