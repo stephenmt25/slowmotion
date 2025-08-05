@@ -13,12 +13,14 @@ export const Progress = () => {
     exercises, 
     progressFilter, 
     setProgressFilter, 
-    calculateProgressData 
+    calculateProgressData,
+    calculateMuscleGroupVolumeData 
   } = useWorkoutStore();
 
   const [selectedMetric, setSelectedMetric] = useState<'volume_load' | 'max_weight' | 'estimated_1rm' | 'total_reps'>('volume_load');
 
   const progressData = calculateProgressData();
+  const muscleGroupVolumeData = calculateMuscleGroupVolumeData();
 
   const getMetricDisplayName = (metric: string) => {
     switch (metric) {
@@ -138,13 +140,54 @@ export const Progress = () => {
       </div>
 
       {!progressFilter ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Select a filter to view progress</h3>
-            <p className="text-muted-foreground text-center">
-              Choose an exercise or muscle group to analyze your progress over time
-            </p>
+        <Card className="progress-chart">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5" />
+              <span>Volume Load by Muscle Group</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {muscleGroupVolumeData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <BarChart3 className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">No workout data available</h3>
+                <p className="text-muted-foreground text-center">
+                  Start logging workouts to see your muscle group progress over time
+                </p>
+              </div>
+            ) : (
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={muscleGroupVolumeData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--chart-grid))" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickFormatter={(date) => new Date(date).toLocaleDateString()}
+                    />
+                    <YAxis />
+                    <Tooltip 
+                      labelFormatter={(date) => new Date(date).toLocaleDateString()}
+                      formatter={(value: number, name: string) => [
+                        `${Math.round(value)} kg`, 
+                        name
+                      ]}
+                    />
+                    {MUSCLE_GROUPS.map((group, index) => (
+                      <Line 
+                        key={group}
+                        type="monotone" 
+                        dataKey={group} 
+                        stroke={`hsl(${(index * 45) % 360}, 70%, 50%)`}
+                        strokeWidth={2}
+                        dot={{ fill: `hsl(${(index * 45) % 360}, 70%, 50%)`, strokeWidth: 1, r: 3 }}
+                        connectNulls={false}
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : progressData.length === 0 ? (

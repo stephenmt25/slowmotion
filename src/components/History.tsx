@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Calendar, ChevronDown, ChevronUp, Clock, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const History = () => {
-  const { workoutSessions } = useWorkoutStore();
+  const { workoutSessions, deleteWorkoutSession } = useWorkoutStore();
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
 
   const toggleSessionExpansion = (sessionId: string) => {
@@ -95,17 +95,27 @@ export const History = () => {
                       <span>{Math.round(stats.totalVolume)} total volume</span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleSessionExpansion(session.id)}
-                  >
-                    {isExpanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteWorkoutSession(session.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleSessionExpansion(session.id)}
+                    >
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
 
