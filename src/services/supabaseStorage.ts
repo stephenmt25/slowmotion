@@ -16,7 +16,7 @@ export class SupabaseStorageService {
   private static async setDeviceContext() {
     try {
       console.log('Setting device context for device:', this.deviceId);
-      const { error } = await supabase.rpc('set_config', {
+      const { data, error } = await supabase.rpc('set_config', {
         setting_name: 'app.device_id',
         setting_value: this.deviceId,
         is_local: true
