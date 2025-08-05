@@ -153,10 +153,12 @@ interface WorkoutState {
   
   // History actions
   loadWorkoutHistory: () => void;
+  deleteWorkoutSession: (sessionId: string) => void;
   
   // Progress actions
   setProgressFilter: (filter: WorkoutState['progressFilter']) => void;
   calculateProgressData: () => ProgressData[];
+  calculateMuscleGroupVolumeData: () => Array<{ date: string; [key: string]: any }>;
   
   // Modal actions
   openModal: (type: 'exercise' | 'custom-tracker', exerciseId?: string) => void;
@@ -346,6 +348,13 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
     set({ workoutSessions: sortedSessions });
   },
 
+  deleteWorkoutSession: (sessionId) => {
+    const { workoutSessions } = get();
+    const updatedSessions = workoutSessions.filter(session => session.id !== sessionId);
+    set({ workoutSessions: updatedSessions });
+    saveToStorage(STORAGE_KEYS.workoutSessions, updatedSessions);
+  },
+
   // Progress
   setProgressFilter: (filter) => set({ progressFilter: filter }),
 
@@ -398,6 +407,42 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
         estimated_1rm: Math.round(maxE1RM * 10) / 10,
         total_reps: totalReps
       };
+    }).reverse(); // Reverse to show chronological order
+  },
+
+  calculateMuscleGroupVolumeData: () => {
+    const { workoutSessions } = get();
+    const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core'];
+    
+    return workoutSessions.map(session => {
+      const dataPoint: { date: string; [key: string]: any } = { date: session.date };
+      
+      MUSCLE_GROUPS.forEach(muscleGroup => {
+        const relevantEntries = session.entries?.filter(entry => {
+          const exerciseMuscleGroup = entry.exercise?.muscle_group;
+          if (exerciseMuscleGroup === muscleGroup) return true;
+          // Handle "Arms" category by mapping to Biceps/Triceps
+          if (muscleGroup === 'Biceps' && exerciseMuscleGroup === 'Arms' && 
+              (entry.exercise?.name.toLowerCase().includes('bicep') || 
+               entry.exercise?.name.toLowerCase().includes('curl'))) return true;
+          if (muscleGroup === 'Triceps' && exerciseMuscleGroup === 'Arms' && 
+              (entry.exercise?.name.toLowerCase().includes('tricep') || 
+               entry.exercise?.name.toLowerCase().includes('extension') ||
+               entry.exercise?.name.toLowerCase().includes('close grip'))) return true;
+          return false;
+        }) || [];
+        
+        let totalVolumeLoad = 0;
+        relevantEntries.forEach(entry => {
+          entry.sets.forEach(set => {
+            totalVolumeLoad += set.weight * set.reps;
+          });
+        });
+        
+        dataPoint[muscleGroup] = totalVolumeLoad;
+      });
+      
+      return dataPoint;
     }).reverse(); // Reverse to show chronological order
   },
 
