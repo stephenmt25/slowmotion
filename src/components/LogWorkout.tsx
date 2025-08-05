@@ -113,7 +113,6 @@ export const LogWorkout = () => {
         </div>
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
             <Label htmlFor="workout-date" className="sr-only">Workout Date</Label>
             <Input
               id="workout-date"
