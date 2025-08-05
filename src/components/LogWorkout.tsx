@@ -125,20 +125,6 @@ export const LogWorkout = () => {
         </div>
       </div>
 
-      {/* Add Exercise Button */}
-      <Card>
-        <CardContent className="p-6">
-          <Button 
-            onClick={() => setIsExerciseSelectorOpen(true)}
-            className="w-full"
-            size="lg"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Add Exercise
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Exercise Selector Modal */}
       <Dialog open={isExerciseSelectorOpen} onOpenChange={setIsExerciseSelectorOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
@@ -289,6 +275,27 @@ export const LogWorkout = () => {
         )}
       </div>
 
+
+
+      <CustomTrackerModal 
+        isOpen={isCustomTrackerModalOpen}
+        onClose={() => setIsCustomTrackerModalOpen(false)}
+      />
+
+      {/* Add Exercise Button */}
+      <Card>
+        <CardContent className="p-6">
+          <Button 
+            onClick={() => setIsExerciseSelectorOpen(true)}
+            className="w-full"
+            size="lg"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Add Exercise
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Action Buttons */}
       {currentWorkout.entries.length > 0 && (
         <div className="flex flex-col sm:flex-row gap-3">
@@ -310,10 +317,6 @@ export const LogWorkout = () => {
         </div>
       )}
 
-      <CustomTrackerModal 
-        isOpen={isCustomTrackerModalOpen}
-        onClose={() => setIsCustomTrackerModalOpen(false)}
-      />
       <TutorialModal />
     </div>
   );
